@@ -1,0 +1,5 @@
+.dockerignore
+.gitignore
+authorization-server.iml
+Dockerfile-auth
+
