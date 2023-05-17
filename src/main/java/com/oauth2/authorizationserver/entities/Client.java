@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+
+import java.time.Duration;
 
 @Entity
 @Table(name = "clients")
@@ -28,10 +31,10 @@ public class Client {
         Client clientEntity = new Client();
         clientEntity.setClientId(client.getClientId());
         clientEntity.setSecret(client.getClientSecret());
-        clientEntity.setRedirectUri(client.getRedirectUris().stream().findAny().get());
-        clientEntity.setScope(client.getScopes().stream().findAny().get());
-        clientEntity.setAuthMethod(client.getClientAuthenticationMethods().stream().findAny().map(ClientAuthenticationMethod::getValue).get()); //todo
-        clientEntity.setGrantType(client.getAuthorizationGrantTypes().stream().findAny().get().getValue());
+        clientEntity.setRedirectUri(client.getRedirectUris().stream().findAny().orElseThrow());
+        clientEntity.setScope(client.getScopes().stream().findAny().orElseThrow());
+        clientEntity.setAuthMethod(client.getClientAuthenticationMethods().stream().findAny().map(ClientAuthenticationMethod::getValue).orElseThrow());
+        clientEntity.setGrantType(client.getAuthorizationGrantTypes().stream().findAny().orElseThrow().getValue());
         return clientEntity;
     }
 
@@ -42,63 +45,60 @@ public class Client {
                 .scope(client.getScope())
                 .redirectUri(client.getRedirectUri())
                 .clientAuthenticationMethod(new ClientAuthenticationMethod(client.getAuthMethod()))
-                .authorizationGrantType(new AuthorizationGrantType(client.getGrantType()))
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofMinutes(5))
+                        .refreshTokenTimeToLive(Duration.ofHours(2))
+                        .build())
                 .build();
     }
 
-    public Long getId() {
+    private Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getClientId() {
+    private String getClientId() {
         return clientId;
     }
 
-    public void setClientId(String clientId) {
+    private void setClientId(String clientId) {
         this.clientId = clientId;
     }
 
-    public String getSecret() {
+    private String getSecret() {
         return secret;
     }
 
-    public void setSecret(String secret) {
+    private void setSecret(String secret) {
         this.secret = secret;
     }
 
-    public String getRedirectUri() {
+    private String getRedirectUri() {
         return redirectUri;
     }
 
-    public void setRedirectUri(String redirectUri) {
+    private void setRedirectUri(String redirectUri) {
         this.redirectUri = redirectUri;
     }
 
-    public String getScope() {
+    private String getScope() {
         return scope;
     }
 
-    public void setScope(String scope) {
+    private void setScope(String scope) {
         this.scope = scope;
     }
 
-    public String getAuthMethod() {
+    private String getAuthMethod() {
         return authMethod;
     }
 
-    public void setAuthMethod(String authMethod) {
+    private void setAuthMethod(String authMethod) {
         this.authMethod = authMethod;
     }
 
-    public String getGrantType() {
-        return grantType;
-    }
-
-    public void setGrantType(String grantType) {
+    private void setGrantType(String grantType) {
         this.grantType = grantType;
     }
 }
