@@ -48,7 +48,7 @@ public class Client {
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .tokenSettings(TokenSettings.builder()
-                        .accessTokenTimeToLive(Duration.ofMinutes(5))
+                        .accessTokenTimeToLive(Duration.ofHours(1))
                         .refreshTokenTimeToLive(Duration.ofHours(2))
                         .build())
                 .build();
