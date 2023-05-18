@@ -5,16 +5,23 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.oauth2.authorizationserver.services.CustomUserDetailsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
@@ -22,10 +29,14 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 @Configuration
 public class SecurityConfig {
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
 
     @Bean
     @Order(1)
@@ -66,7 +77,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JWKSource<SecurityContext> jwkSource() throws Exception {
+    public JWKSource<SecurityContext> jwkSource() throws java.security.NoSuchAlgorithmException {
         KeyPairGenerator kg = KeyPairGenerator.getInstance("RSA");
         kg.initialize(2048);
         KeyPair kp = kg.generateKeyPair();
@@ -83,4 +94,21 @@ public class SecurityConfig {
         return new ImmutableJWKSet<>(set);
     }
 
+    @Bean
+    public OAuth2TokenCustomizer<JwtEncodingContext> oAuth2TokenCustomizer() {
+        return this::customizeWithRole;
+    }
+
+    private void customizeWithRole(JwtEncodingContext context) {
+        Authentication authentication = context.getPrincipal();
+        String username = authentication.getName();
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+        Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
+
+        List<String> roles = authorities.stream().map(GrantedAuthority::getAuthority).toList();
+
+        context.getClaims().claim("roles", roles);
+    }
 }
